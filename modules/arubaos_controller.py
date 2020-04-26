@@ -16,9 +16,13 @@ from time import sleep
 class ArubaOS_Controller():
 
     def __init__(self, ip, username, password):
-        self.credentials = 'username={}&password={}'.format(username, password)
-        self.url = "https://{}:4343/v1/".format(ip)
-        self.UIDARUBA = None
+        self.__credentials = 'username={}&password={}'.format(
+            username,
+            password
+        )
+        self.__api_endpoint  = "https://{}:4343/v1".format(ip)
+        self.__UIDARUBA = None
+
 
     def login(self):
         """ Obtain cookie """
@@ -27,92 +31,123 @@ class ArubaOS_Controller():
             'Content-Type': 'application/json'
         }
 
-        url = '{}api/login'.format(self.url)
+        url = self.__api_endpoint + '/api/login'
 
         try:
-            response = requests.post(url, data = self.credentials,
-                                     headers = headers)
+            response = requests.post(
+                url,
+                data = self.__credentials,
+                headers = headers
+        )
         except Exception as e:
             return {"status": 2, "result": str(e)}
 
-        if response.status_code == 200: # login ok
+        if (response.status_code == 200): # OK
+            # convert JSON to dict
             dct = json.loads(response.text)
-            self.UIDARUBA = dct['_global_result']['UIDARUBA']
+            self.__UIDARUBA = dct['_global_result']['UIDARUBA']
             return {"status": 0, "result": dct}
 
+        # status_code != 200
         return {"status": 1, "result": response.status_code}
+
 
     def logout(self):
-        """ Logout from mobility controller """
+        """ Logout """
 
         headers = {
             'Content-Type': 'application/json'
         }
+
         cookie = {
-            'SESSION': self.UIDARUBA
+            'SESSION': self.__UIDARUBA
         }
 
-        url = '{}api/logout'.format(self.url)
+        url = self.__api_endpoint + '/api/logout'
 
         try:
             response = requests.get(url, cookies = cookie, headers = headers)
         except Exception as e:
             return {"status": 2, "result": str(e)}
 
-        if response.status_code == 200: # logout ok
+        if response.status_code == 200: # OK
+            # convert JSON to dict
             dct = json.loads(response.text)
             return {"status": 0, "result": dct}
 
+        # status_code != 200
         return {"status": 1, "result": response.status_code}
+
+
+    def api_get(self, url):
+        """ Return the result of the get operation """
+
+        """
+        HTTP Status Code	Reason
+        200                 Successful Response
+        401                 Unauthorized
+        403	                Forbidden
+        415	                Unsupported Type
+        """
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        cookie = {
+            'SESSION': self.__UIDARUBA
+        }
+
+        try:
+            response = requests.get(url, cookies = cookie, headers = headers)
+        except Exception as e:
+            return {"status": 2, "result": str(e)}
+
+        if (response.status_code == 200): # OK
+            dct = json.loads(response.text)
+            return {"status": 0, "result": dct}
+
+        # status_code != 200
+        return {"status": 1, "result": response.status_code}
+
 
     def node_hierarchy(self):
+        """ Get configuration node hierarchy of system """
 
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        cookie = {
-            'SESSION': self.UIDARUBA
-        }
+        url = "{}/configuration/object/node_hierarchy?\
+              json=1&UIDARUBA={}".format(
+              self.__api_endpoint,
+              self.__UIDARUBA
+        )
 
-        url = "{}configuration/object/node_hierarchy?\
-              json=1&UIDARUBA={}".format(self.url, self.UIDARUBA)
+        return self.api_get(url)
 
-        try:
-            response = requests.get(url, cookies = cookie, headers = headers)
-        except Exception as e:
-            return {"status": 2, "result": str(e)}
 
-        if (response.status_code == 200): # ok
-            dct = json.loads(response.text)
-            return {"status": 0, "result": dct}
+    def show_ap_database(self):
+        """ Retrieve the access point database from Mobility Master """
 
-        return {"status": 1, "result": response.status_code}
-
-    def ap_database(self):
-        ''' Retrieve the access point database from Mobility Master '''
-
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        cookie = {
-            'SESSION': self.UIDARUBA
-        }
-
-        url = "{}configuration/showcommand?\
+        url = "{}/configuration/showcommand?\
               json=1&UIDARUBA={}&command={}".format(
-              self.url, self.UIDARUBA, 'show ap database')
+              self.__api_endpoint,
+              self.__UIDARUBA,
+              'show ap database'
+        )
 
-        try:
-            response = requests.get(url, cookies = cookie, headers = headers)
-        except Exception as e:
-            return {"status": 2, "result": str(e)}
+        return self.api_get(url)
 
-        if (response.status_code == 200): # ok
-            dct = json.loads(response.text)
-            return {"status": 0, "result": dct}
 
-        return {"status": 1, "result": response.status_code}
+    def show_running_config(self):
+        """ Retrieve the running configuration from Mobility Master """
 
+        url = "{}/configuration/showcommand?\
+              json=1&UIDARUBA={}&command={}".format(
+              self.__api_endpoint,
+              self.__UIDARUBA,
+              'show running-config'
+        )
+
+        return self.api_get(url)
+        
 
 if __name__ == '__main__':
     print(__name__)

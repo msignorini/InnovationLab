@@ -1,5 +1,12 @@
+import sys
+
+# for direct use
+sys.path.append('../')
+# for Docker
+sys.path.append('/app')
+
 import modules.telegram
-import modules.clearpass
+import modules.aruba_clearpass
 import modules.arubaos_switch
 import modules.arubaos_controller
 from pprint import pprint
@@ -8,10 +15,10 @@ import time
 import pytz
 from datetime import datetime, timezone
 from configparser import ConfigParser
-import os
 import json
 from validate_email import validate_email # pip3 install validate_email
 import logging
+import os
 
 # global object
 cppm = None
@@ -85,7 +92,7 @@ def get_guest(argv, chat_id):
     ret = cppm.check_token_validity()
     if (ret['status'] != 0):
         msg = "Problem with ClearPass token, error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -94,7 +101,7 @@ def get_guest(argv, chat_id):
     if (ret['status'] != 0): # error
         msg = "Problem while retrieving guest accounts, \
               error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -127,7 +134,7 @@ def new_guest(argv, chat_id):
     # check email syntax
     if not validate_email(argv[1]):
         msg = "Invalid email address"
-        logger.debug(f'{msg}')
+        logger.debug(msg)
         bot.send_message(chat_id,msg)
         return
 
@@ -135,7 +142,7 @@ def new_guest(argv, chat_id):
     ret = cppm.check_token_validity()
     if (ret['status'] != 0):
         msg = "Problem with ClearPass token, error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -144,14 +151,14 @@ def new_guest(argv, chat_id):
     if (ret['status'] != 0):
         msg = "Problem while checking if user exists, \
               error: {}".format(ret['status'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
     # if ret is not an error it should be True or False
     if ret['result']:
         str = "User {} already exists".format(argv[1])
-        logger.debug(f'{str}')
+        logger.debug(str)
         bot.send_message(chat_id, str)
         return
 
@@ -160,7 +167,7 @@ def new_guest(argv, chat_id):
     if (ret['status'] != 0):
         msg = "Problem while creating new account, \
               error {}".format(ret['status'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -195,7 +202,7 @@ def delete_guest(argv, chat_id):
     ret = cppm.check_token_validity()
     if (ret['status'] != 0):
         msg = "Problem with ClearPass token, error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -204,7 +211,7 @@ def delete_guest(argv, chat_id):
     if (ret['status'] != 0):
         msg = "Problem while checking if user exists, \
               error: {}".format(ret['status'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -218,10 +225,10 @@ def delete_guest(argv, chat_id):
     ret = cppm.delete_guest_account(argv[1])
     if ret['status'] == 0: # 204 means user deleted
         str = "User {} deleted".format(argv[1])
-        logger.debug(f'{str}')
+        logger.debug(str)
     else:
         str = "Problem while deleting user, error: {}".format(ret['result'])
-        logger.error(f'{str}')
+        logger.error(str)
 
     print(str)
     bot.send_message(chat_id, str)
@@ -272,7 +279,7 @@ def show_running_config(argv, chat_id):
     ret = aos['obj'].login()
     if (ret['status'] != 0): # 0 means login ok
         msg = "Problem while login to switch, error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -283,7 +290,7 @@ def show_running_config(argv, chat_id):
     if (ret['status'] != 0):
         msg = "Problem while retriving running config, \
               error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -318,7 +325,7 @@ def show_vlan(argv, chat_id):
     ret = aos['obj'].login()
     if (ret['status'] != 0): # 0 means login ok
         msg = "Problem while login to switch, error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -329,7 +336,7 @@ def show_vlan(argv, chat_id):
     if (ret['status'] != 0):
         msg = "Problem while retriving vlan database, \
               error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -364,7 +371,7 @@ def show_clients(argv, chat_id):
     ret = aos['obj'].login()
     if (ret['status'] != 0): # 0 means login ok
         msg = "Problem while login to switch, error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -375,7 +382,7 @@ def show_clients(argv, chat_id):
     if (ret['status'] != 0):
         msg = "Problem while retriving vlan database, \
               error: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         bot.send_message(chat_id, msg)
         return
 
@@ -404,7 +411,7 @@ def show_ap(text, chat_id):
         bot.send_message(chat_id, msg)
         return
 
-    ret = mobility_master.ap_database()
+    ret = mobility_master.show_ap_database()
 
     # mobility master logout
     mobility_master.logout()
@@ -448,7 +455,12 @@ def functions_handler(argument, chat_id):
     func(argument, chat_id)
 
 def main():
+
+    # directory containing the script
     path = os.path.dirname(os.path.abspath(__file__))
+    # parent folder
+    parent = os.path.dirname(os.path.abspath(path))
+
     # Create a custom logger
     global logger
     logger = logging.getLogger(__name__)
@@ -470,7 +482,7 @@ def main():
     logger.debug('Start orchestrator.py')
 
     # Configuration file parameters
-    file = path + '/config/params.cfg'
+    file = parent + '/config/params.cfg'
     config = ConfigParser()
     config.read(file)
 
@@ -493,7 +505,7 @@ def main():
 
     # create ClearPass object
     global cppm
-    cppm = modules.clearpass.ClearPass(
+    cppm = modules.aruba_clearpass.ClearPass(
             config.get('ClearPass', 'clearpass_fqdn'),
             config.get('OAuth2', 'grant_type'),
             config.get('OAuth2', 'client_id'),
@@ -505,7 +517,7 @@ def main():
     if (ret['status'] != 0):
         msg = "Error in creating ClearPass access \
               token: {}".format(ret['result'])
-        logger.error(f'{msg}')
+        logger.error(msg)
         print(msg)
         exit(1)
 
@@ -530,7 +542,7 @@ def main():
             if (updates['status'] != 0):
                 msg = "Problem in retriving updates from\
                  Telegram, error: {}".format(updates['result'])
-                logger.error(f'{updates}')
+                logger.error(updates)
                 print(updates)
                 continue
 
@@ -544,7 +556,7 @@ def main():
 
                 if 'message' not in update.keys():
                     msg = "Update does not contain 'message', continue"
-                    logger.debug(f'{msg}')
+                    logger.debug(msg)
                     print(msg)
                     continue
 
@@ -553,14 +565,14 @@ def main():
 
                 if 'forward_from' in update['message'].keys():
                     msg = "Forwarded message, continue"
-                    logger.debug(f'{msg}')
+                    logger.debug(msg)
                     print(msg)
                     bot.send_message(chat_id,
                         "This Bot don't accept forwarded message")
                     continue
                 if 'text' not in update['message'].keys():
                     msg = "Update['message'] does not contain 'text', continue"
-                    logger.debug(f'{msg}')
+                    logger.debug(msg)
                     print(msg)
                     continue
 
@@ -571,12 +583,12 @@ def main():
                         update['message']['text'],
                         chat_id
                     )
-                    logger.debug(f'{msg}')
+                    logger.debug(msg)
                     print(msg)
                     functions_handler(text, chat_id)
                 else:
                     msg = "Unauthorized request"
-                    logger.debug(f'{msg}')
+                    logger.debug(msg)
                     print(msg)
                     bot.send_message(chat_id,
                         "You are not allowed to use this Bot")
